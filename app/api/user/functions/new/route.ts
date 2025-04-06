@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData()
+  
   const file = formData.get('functionFile') as File
   const buffer = Buffer.from(await file.arrayBuffer())
-
-  const name = formData.get('name')?.toString()!
+  const name = formData.get('name')?.toString().toLowerCase()!
   const description = formData.get('description')?.toString() || ''
   const runtime = formData.get('runtime')?.toString()!
   const handler = formData.get('handler')?.toString()!
