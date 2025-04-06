@@ -90,7 +90,7 @@ export default function FunctionListPage() {
   }
 
   const getExecutionUrl = (fn: ServerlessFunction, type: 'docker' | 'firecracker') => {
-    return `${process.env.NEXT_PUBLIC_BASE_URL}/api/function/${fn.userId}/${fn.name}/${type}`
+    return `${process.env.NEXT_PUBLIC_BASE_URL}/api/function/${fn.userId}/${fn.handler}/${type}`
   }
 
   // Find the function name for delete dialog
