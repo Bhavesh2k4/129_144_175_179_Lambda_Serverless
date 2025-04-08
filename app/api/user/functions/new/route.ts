@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer())
   const name = formData.get('name')?.toString().toLowerCase()!
   const description = formData.get('description')?.toString() || ''
-  const runtime = formData.get('runtime')?.toString()!
-  const handler = formData.get('handler')?.toString()!
+  const runtime = formData.get('runtime')?.toString().toLowerCase()!
+  const handler = formData.get('handler')?.toString().toLowerCase()!
   const timeout = parseInt(formData.get('timeout')?.toString() || '30')
   const memory = parseInt(formData.get('memory')?.toString() || '128')
 
