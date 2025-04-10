@@ -13,19 +13,16 @@ type UserSession = {
   email: string;
   role: UserRole;
   image?: string | null;
-  expires?: string;
   emailVerified?: Date | null;
 }
 
-type SessionType = {
-  user?: UserSession;
-}
-
 const UserPage = async () => {
-  const session = await auth() as SessionType;
+  const session = await auth();
   
   const user = session?.user || {} as UserSession;
-  const { name, email, role, expires, id } = user;
+  const expires = session?.expires || null;
+  const { name, email, role, id , image} = user;
+
   
   // Format expiration date
   const formattedExpires = expires ? new Date(expires).toLocaleString() : 'N/A';
