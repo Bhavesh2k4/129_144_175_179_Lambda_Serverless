@@ -89,7 +89,7 @@ export default function FunctionListPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const getExecutionUrl = (fn: ServerlessFunction, type: 'docker' | 'firecracker') => {
+  const getExecutionUrl = (fn: ServerlessFunction, type: 'docker' | 'nanos') => {
     return `${process.env.NEXT_PUBLIC_BASE_URL}/api/function/${fn.userId}/${fn.handler}/${type}`
   }
 
@@ -211,11 +211,11 @@ export default function FunctionListPage() {
                     size="sm" 
                     className="flex-1 hover:cursor-pointer"
                     onClick={() => {
-                      navigator.clipboard.writeText(getExecutionUrl(fn, 'firecracker'))
-                      toast.success('Firecracker URL copied to clipboard')
+                      navigator.clipboard.writeText(getExecutionUrl(fn, 'nanos'))
+                      toast.success('Nanos Unikernel URL copied to clipboard')
                     }}
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" /> Firecracker
+                    <ExternalLink className="h-3 w-3 mr-1" /> Nanos Unikernel
                   </Button>
                   <Button 
                     variant="destructive" 

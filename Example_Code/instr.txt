@@ -1,0 +1,2 @@
+paste the url and give optional args as 
+usr?name=bhavesh&age=10

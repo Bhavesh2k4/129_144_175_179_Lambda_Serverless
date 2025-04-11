@@ -14,7 +14,7 @@ const s3 = new S3Client({ region: REGION });
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[1] Start function execution route');
+    console.log('[1] Start Nanos function execution');
 
     const pathname = req.nextUrl.pathname;
     const parts = pathname.split('/');
@@ -38,9 +38,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Function not found' }, { status: 404 });
     }
 
-    const runtime = func.runtime.toLowerCase();
+    const runtime = func.runtime.toLowerCase(); // nodejs / python
     const extension = runtime.includes('node') ? '.js' : '.py';
-    const dockerImage = runtime.includes('node') ? 'node:18' : 'python:3.9';
     const entryFile = `${handler.split('.')[0]}${extension}`;
     const s3Key = func.s3Key;
 
@@ -48,67 +47,65 @@ export async function GET(req: NextRequest) {
     const s3Res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }));
     const code = await s3Res.Body?.transformToString();
     if (!code) throw new Error('Could not read function file from S3');
-    console.log('[3.1] Code fetched from S3 successfully');
+    console.log('[3.1] Code fetched from S3');
 
     const tempId = uuidv4();
     const tempPath = path.join(tmpdir(), tempId);
     await fs.mkdir(tempPath);
+
     const codeFile = path.join(tempPath, entryFile);
     await fs.writeFile(codeFile, code);
-    console.log('[4] Code written to temp path:', codeFile);
+    console.log('[4] Code written to:', codeFile);
 
-    const timeoutMs = (func.timeout ?? 30) * 1000;
-    const memoryLimitMb = func.memory ?? 128;
-    const start = Date.now(); // Track duration
-
-    const containerCmd = [
-      'docker', 'run', '--rm',
-      '--memory', `${memoryLimitMb}m`,
-      '--memory-swap', `${memoryLimitMb}m`,
-      '-v', `${tempPath}:/app`,
-      '-w', '/app',
-      dockerImage,
-      runtime.includes('node') ? 'node' : 'python3',
-      entryFile,
-      ...Object.values(queryParams),
+    const opsArgs = [
+      'pkg', 'load',
+      runtime.includes('node') ? 'eyberg/node:20.5.0' : 'eyberg/python:3.10.6',
+      '-n',
+      '-a', entryFile,
     ];
-    console.log('[5] Running Docker command:', containerCmd.join(' '));
+
+    // Pass CLI args
+    for (const val of Object.values(queryParams)) {
+      opsArgs.push('-a', val);
+    }
+
+    console.log('[5] Running OPS command:', opsArgs.join(' '));
 
     const stdout: string[] = [];
     const stderr: string[] = [];
+
+    const start = Date.now();
+    const timeoutMs = (func.timeout ?? 30) * 1000;
     let didTimeout = false;
 
     const statusCode = await new Promise<number>((resolve, reject) => {
-      const proc = spawn(containerCmd[0], containerCmd.slice(1));
+      const proc = spawn('ops', opsArgs, { cwd: tempPath });
 
       const timeout = setTimeout(() => {
-        const msg = `[!] Docker timed out after ${timeoutMs / 1000}s`;
-        console.warn(msg);
-        stderr.push(msg + '\n');
         didTimeout = true;
+        const msg = `[!] Nanos timed out after ${timeoutMs / 1000}s`;
+        console.warn(msg);
+        stderr.push(msg);
         proc.kill('SIGKILL');
       }, timeoutMs);
 
       proc.stdout.on('data', (data) => {
-        const msg = data.toString();
-        stdout.push(msg);
-        console.log('[stdout]', msg);
+        stdout.push(data.toString());
       });
 
       proc.stderr.on('data', (data) => {
-        const msg = data.toString();
-        stderr.push(msg);
-        console.error('[stderr]', msg);
+        stderr.push(data.toString());
       });
 
       proc.on('close', (code) => {
         clearTimeout(timeout);
-        console.log(`[6] Docker process exited with code ${code}`);
-        resolve(didTimeout ? 124 : (code ?? 1));
+        console.log(`[6] OPS exited with code ${code}`);
+        resolve(code ?? 1);
       });
 
       proc.on('error', (err) => {
         clearTimeout(timeout);
+        console.error('[OPS spawn error]', err);
         reject(err);
       });
     });
@@ -116,16 +113,17 @@ export async function GET(req: NextRequest) {
     await fs.rm(tempPath, { recursive: true, force: true });
     console.log('[7] Temp files cleaned up');
 
+    const durationMs = Date.now() - start;
+
     return NextResponse.json({
       status: statusCode,
-      stdout: stdout.join('').trim(),
+      stdout: stdout.join('').trim().split('\n').pop(),
       stderr: stderr.join('').trim(),
       timeout: didTimeout,
-      durationMs: Date.now() - start,
+      durationMs,
     });
-
   } catch (err: any) {
-    console.error('[Function Docker Exec Error]', err);
-    return NextResponse.json({ error: err.message || 'Internal Error' }, { status: 500 });
+    console.error('[Function Nanos Exec Error]', err);
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }
