@@ -1,167 +1,279 @@
-# Lambda Serverless Clone 🧬
+# Serverless Function Execution Platform
 
-This is a custom-built **Lambda-style serverless function execution platform**, built using Next.js, PostgreSQL, and AWS S3. It supports **authentication**, **function uploads**, and **execution via Docker or Nanos unikernel**.
+A serverless compute platform that allows users to upload, manage and execute functions on-demand with no infrastructure management required. This project provides a complete solution from authentication to function execution using both Docker containers and Nanos unikernels.
 
----
+## Features
 
-## 🌐 Features
+- **Secure Authentication System**
+  - Email/Password registration with email verification
+  - OAuth login via Google and GitHub
+  - Password reset functionality with email notifications
+  - Session management using NextAuth
 
-### 🔐 Authentication
-- Sign in via **Credentials**, **Google OAuth**, or **GitHub OAuth**
-- Email **verification** on sign-up (via [resend.com](https://resend.com))
-- **Password reset** support via email for credentials users
+- **Function Management**
+  - Upload code in Python or JavaScript
+  - Function metadata stored in PostgreSQL
+  - Function code stored in AWS S3
+  - Custom memory and timeout configurations
 
-### 👤 User Dashboard
-- Authenticated users can:
-  - Upload code functions (Python or Node.js)
-  - Configure runtime, timeout, and memory
-  - View and manage their uploaded functions
+- **Execution Engines**
+  - Docker-based execution environment
+  - Nanos unikernel lightweight virtualization
+  - HTTP-based function invocation with parameter passing
+  - Output and error capture with execution metrics
 
-### ⚙️ Function Storage
-- **Metadata** (handler, timeout, runtime, etc.) is stored in **PostgreSQL**
-- **Function code** is uploaded and stored in **AWS S3**, within a unique folder for each user
+- **User Interface**
+  - Clean, responsive dashboard
+  - Function management portal
+  - Performance metrics
 
-### 🚀 Function Execution
-- HTTP endpoint to execute uploaded code
-- Two execution options:
-  1. **Docker** (standard container runtime)
-  2. **Nanos** (unikernel for optimized lightweight execution)
-- Optional CLI parameters passed via query string
+## Architecture
 
----
-
-## 🧪 Example API Execution
-
-### Endpoint:
-```http
-GET /api/function/[userId]/[handler]/docker?arg1=foo&arg2=bar
-GET /api/function/[userId]/[handler]/nanos?arg1=foo&arg2=bar
+```mermaid
+graph TD
+    A[Client Browser] --> B[Next.js Frontend]
+    B <--> C[NextAuth Authentication]
+    C <--> D[Database - PostgreSQL]
+    B <--> E[API Layer]
+    E <--> F[AWS S3 Storage]
+    E <--> G[Docker Execution Engine]
+    E <--> H[Nanos Unikernel Engine]
+    D <--> I[Function Metadata]
+    F <--> J[Function Code]
+    G <--> K[Execution Results]
+    H <--> K
+    K --> B
+    
+    subgraph Authentication
+        C
+    end
+    
+    subgraph Data Storage
+        D
+        F
+        I
+        J
+    end
+    
+    subgraph Execution Engines
+        G
+        H
+        K
+    end
 ```
 
----
+## Installation Requirements
 
-## 🛠️ Tech Stack
+- Node.js 18+
+- PostgreSQL
+- Docker
+- Nanos/Ops
+- AWS S3 Account
+- Resend API for transactional emails
 
-| Feature           | Tech Used                |
-|-------------------|--------------------------|
-| Frontend          | Next.js App Router       |
-| Authentication    | Auth.js                  |
-| DB ORM            | Prisma                   |
-| Database          | PostgreSQL (serverless)  |
-| Object Storage    | AWS S3                   |
-| Container Runtime | Docker                   |
-| Unikernel Runner  | OPS (Nanos)              |
+## Setup Instructions
 
----
-
-## 📁 Example Function Code
-
-```python
-# cloud.py
-
-def calculator(a, b):
-    return {
-        "add": a + b,
-        "subtract": a - b,
-        "multiply": a * b,
-        "divide": a / b if b != 0 else "undefined",
-        "remainder": a % b if b != 0 else "undefined"
-    }
-
-if __name__ == "__main__":
-    import sys
-
-    try:
-        a = float(sys.argv[1])
-        b = float(sys.argv[2])
-    except (IndexError, ValueError):
-        print("Usage: python cloud.py <num1> <num2>")
-        sys.exit(1)
-
-    result = calculator(a, b)
-    for op, value in result.items():
-        print(f"{op}: {value}", end=" ")
-```
-
-## 🧾 Example Flow
-
-1. **User registers or logs in**
-   - Supports OAuth (GitHub, Google) or credentials
-2. **User uploads a Python function**
-   - Example: `calculator.py`
-3. **User selects runtime environment**
-   - Docker (containerized)
-   - Nanos (via OPS unikernel)
-4. **Function metadata is saved to PostgreSQL**
-   - Includes user ID, filename, runtime, timestamps, etc.
-5. **Function code is uploaded to S3**
-   - Stored securely in your configured AWS bucket
-6. **On invocation**, the system:
-   - Downloads the code from S3
-   - Reads metadata from the database
-   - Executes the function using:
-     - 🐳 A Docker container **or**
-     - ⚡ A Nanos unikernel built with OPS
-7. **Output is captured** and returned as JSON
-
-## ⚙️ Setup Instructions
-
-### 1. Clone the Repo
+### 1. Clone the repository and install dependencies
 
 ```bash
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/yourusername/cloudless-compute.git
+cd cloudless-compute
 npm install
 ```
 
-### 2.Generate Auth Secret (creates .env.local)
-
+### 2. Configure environment variables
+To create a .env.local file
 ```bash
-npx auth secret > .env.local
+npx auth secret
 ```
 
-### 3. Configure .env
+Create a `.env` file with the following variables:
 
-```bash
-DATABASE_URL=                     # PostgreSQL connection string
-AWS_ACCESS_KEY_ID=               # Your AWS access key
-AWS_SECRET_ACCESS_KEY=           # Your AWS secret
-AWS_REGION=                      # e.g. us-east-1
-AWS_S3_BUCKET=                   # Your S3 bucket name
+```
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/cloudless"
+
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-RESEND_API_KEY=                  # For email verification & password reset
+
+# OAuth Providers
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Email
+RESEND_API_KEY="your-resend-api-key"
+EMAIL_FROM="no-reply@yourdomain.com"
+
+# AWS S3
+AWS_ACCESS_KEY_ID="your-aws-access-key"
+AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+AWS_REGION="ap-south-1"
+AWS_S3_BUCKET="cc-project-lambda"
 ```
-## 🐳 Docker Installation & Setup
 
-Docker is required to run uploaded functions inside containers.
-
-### ✅ 1. Install Docker
-
-- Download Docker Desktop from:  
-  [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
-
-- Follow installation steps for your OS (macOS, Windows, Linux).
-
----
-
-### 📦 2. Verify Docker Installation
-
-Once installed, verify it works:
+### 3. Setup PostgreSQL Database
 
 ```bash
-docker --version
+npx prisma generate
+# Initialize the database schema
+npx prisma db push
 ```
 
+### 4. Docker Setup
 
+Ensure Docker is installed and running on your system:
 
+```bash
+# Install Docker (Ubuntu)
+sudo apt-get update
+sudo apt-get install docker.io
+sudo systemctl enable --now docker
 
+# Verify installation
+docker --version
 
+# Allow current user to run Docker without sudo (recommended)
+sudo usermod -aG docker $USER
+newgrp docker
+```
 
+### 5. Nanos Unikernel Setup
 
+Install Ops, the command-line tool for managing Nanos unikernels:
 
+```bash
+# Install Ops (Linux)
+curl -sSL https://ops.city/get.sh | bash
 
+# Verify installation
+ops version
 
+ops update
+```
+
+### 6. AWS S3 Bucket Setup
+
+1. Login to AWS Management Console
+2. Navigate to S3 service
+3. Create a new bucket
+4. Configure bucket settings:
+   - Set region to `your closest region`
+   - Block all public access > off
+   - Enable versioning (optional)
+   - Create a new Bucket policy
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowUserFullObjectAccess",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::381492234419:user/cc-project-lambda"
+            },
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::cc-project-lambda/*"
+        }
+    ]
+}
+```
+5. Create a new user - Add to Group AmazonS3FullAccess
+6. Generate access key and secret access key
+
+### 7. Start the development server
+
+```bash
+npm run dev
+```
+
+## Usage
+
+### Authentication
+
+1. Register a new account at `/register` with email and password, or use OAuth
+2. Verify your email address by clicking the link sent to your inbox
+3. Login at `/login` with your credentials
+
+### Managing Functions
+
+1. Navigate to `/user/functions` to see your existing functions
+2. Create a new function at `/user/new`
+3. Upload your code (Python or JavaScript)
+4. Set function parameters (memory, timeout, etc.)
+
+### Executing Functions
+
+Functions can be executed via HTTP requests:
+
+```
+GET /api/function/{userId}/{handler}/docker?param1=value1&param2=value2
+GET /api/function/{userId}/{handler}/nanos?param1=value1&param2=value2
+```
+
+#### Example:
+
+```
+GET /api/function/user123/calc.calculator/docker?a=5&b=10
+```
+
+### Benchmark Tool
+
+The project includes a benchmark script to compare execution performance between Docker and Nanos engines:
+
+```bash
+# Install required Python packages
+pip install requests matplotlib
+
+# Run a simple benchmark (assuming you have already uploaded calc.py from Example_code : handler = calc.calculator)
+python3 benchmark.py
+```
+
+The benchmark script:
+1. Sends multiple requests to both Docker and Nanos endpoints
+2. Measures execution time and success rate
+3. Generates comparison charts
+4. Provides performance analysis
+
+Example calculator function for benchmarking:
+
+```python
+# Calculator example (calc.py)
+import sys
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python calc.py <a> <b>")
+        sys.exit(1)
+    
+    a = int(sys.argv[1])
+    b = int(sys.argv[2])
+    result = a + b
+    print(f"Result: {a} + {b} = {result}")
+```
+
+## Project Structure
+
+```
+└── bhavesh2k4-129_144_175_179_lambda/
+    ├── actions/                 # Server actions for auth/forms
+    ├── app/                     # Frontend pages and API routes
+    │   ├── (auth)/              # Authentication pages
+    │   ├── (protected)/         # Authenticated user pages
+    │   └── api/                 # API endpoints
+    ├── components/              # UI components
+    │   ├── auth/                # Authentication UI
+    │   └── ui/                  # General UI components (ShadCN)
+    ├── lib/                     # Utility functions
+    ├── prisma/                  # Database schema
+    └── Example_Code/            # Sample functions
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
