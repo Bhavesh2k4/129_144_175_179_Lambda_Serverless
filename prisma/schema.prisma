@@ -53,6 +53,27 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+model VerificationToken {
+  id String @id @default(cuid())
+  email     String
+  token      String @unique
+  expires    DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([email, token])
+
+}
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+  email     String
+  token      String @unique
+  expires    DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([email, token])
+}
+
 model Function {
   id          String    @id @default(cuid())
   name        String

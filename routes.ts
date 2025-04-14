@@ -6,6 +6,9 @@ export const publicRoutes=[
     /^\/$/,  // homepage - "/",
     /^\/api\/function\/[^\/]+\/[^\/]+\/docker$/, // function docker route - "/api/function/[userId]/[handler]/docker"
     /^\/api\/function\/[^\/]+\/[^\/]+\/docker\/.*$/, // function docker route with query params - "/api/function/[userId]/[handler]/docker?query=param"
+    /^\/api\/function\/[^\/]+\/[^\/]+\/nanos$/, // function nanos route - "/api/function/[userId]/[handler]/nanos"
+    /^\/api\/function\/[^\/]+\/[^\/]+\/nanos\/.*$/, // function nanos route with query params - "/api/function/[userId]/[handler]/nanos?query=param"
+    /^\/new-verification$/ // new verification route - "/new-verification"
   ]
   
 
@@ -16,6 +19,9 @@ export const publicRoutes=[
 export const authRoutes=[
     "/register",
     "/login",
+     "/error",
+     '/reset-password',
+     '/new-password',
 ]
 
 /*

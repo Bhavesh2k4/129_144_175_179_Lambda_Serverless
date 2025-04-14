@@ -4,6 +4,9 @@ import { LoginSchema } from "@/schema";
 import { signIn } from '@/auth';
 import { DEFAULT_LOGIN_USER_REDIRECT } from '@/routes';
 import { AuthError } from 'next-auth';
+import { generateVerificationToken } from '@/lib/tokens';
+import { getUserByEmail } from '@/data/user';
+import {sendVerificationEmail} from '@/lib/mail';
 
 export const login = async (values:z.infer<typeof LoginSchema>) => {
   const validatedValues = LoginSchema.safeParse(values)
@@ -13,8 +16,24 @@ export const login = async (values:z.infer<typeof LoginSchema>) => {
         error:"Invalid Credentials",
     };
   }
-
   const {email, password} = validatedValues.data;
+  const existingUser = await getUserByEmail(email);
+  if (!existingUser || !existingUser.email || !existingUser.password) {
+    return {
+        error:"Email not registered",
+    };
+  }
+  if (!existingUser.emailVerified) {
+    const verificationToken = await generateVerificationToken(existingUser.email)
+    await sendVerificationEmail(
+        verificationToken.email,
+        verificationToken.token
+    )
+    return {
+        success:"Verification email sent",
+    };
+  }
+
   try{
     await signIn('credentials', {
         email: email.toLowerCase(),
@@ -36,10 +55,6 @@ export const login = async (values:z.infer<typeof LoginSchema>) => {
         }
     }
   throw error;
-  }
-
-  return {
-    success: "Login Successful",
   }
 
 }
